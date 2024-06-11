@@ -1,0 +1,150 @@
+name: template - big bang
+
+on:
+  workflow_call:
+    inputs:
+        topLevelManagementGroupName:
+            default: ${{ vars.TOP_LEVEL_MANAGEMENTGROUP_NAME }}
+            type: string
+        environment:
+            required: true
+            type: string
+        location:
+            default: ${{ vars.AZURE_DEFAULT_LOCATION }}
+            type: string
+        managementGroupMainBicep:
+            default: ./bicep/main-managementGroups.bicep
+            type: string
+        managementGroupParameters:
+            default: ./parameters/managementGroups.bicepparam
+            type: string
+        coreResourcesMainBicep:
+            default: ./bicep/main-coreResources.bicep
+            type: string
+        coreResourcesParameters:
+            default: ./parameters/coreResources.bicepparam
+            type: string
+        deploymentName:
+            default: bigBang
+            type: string
+
+env:
+  rootManagementGroupId: /providers/Microsoft.Management/managementGroups/${{ vars.AZURE_TENANT_ID }}
+  topLevelManagementGroupId: /providers/Microsoft.Management/managementGroups/${{ inputs.topLevelManagementGroupName }}-${{ inputs.environment }}
+
+jobs:
+    bigBang:
+        runs-on: ubuntu-latest
+        environment: ${{ inputs.environment }}
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: get github token
+          id: github-token
+          uses: actions/create-github-app-token@v1
+          with:
+            app-id: ${{ vars.APP_GITHUB_BIGBANG_ID }}
+            private-key: ${{ secrets.APP_GITHUB_BIGBANG }}
+
+        - name: Azure login
+          uses: azure/login@v1
+          with:
+            client-id: ${{ vars.APP_AZURE_BIGBANG_CLIENT_ID }}
+            tenant-id: ${{ vars.AZURE_TENANT_ID}}
+            allow-no-subscriptions: true
+            enable-AzPSSession: false
+
+        - name: Azure bigBang RBAC
+          uses: azure/cli@v1
+          with:
+            inlineScript: |
+              az role assignment create --assignee ${{ vars.APP_AZURE_BIGBANG_OBJECT_ID }} \
+               --role "Management Group Contributor" \
+               --scope ${{ env.topLevelManagementGroupId }}
+
+               az role assignment create --assignee ${{ vars.APP_AZURE_BIGBANG_OBJECT_ID }} \
+               --role "Hierarchy Settings Administrator" \
+               --scope ${{ env.topLevelManagementGroupId }}
+
+               az role assignment create --assignee ${{ vars.APP_AZURE_BIGBANG_OBJECT_ID }} \
+               --role "Azure Deployment Stack Owner" \
+               --scope ${{ env.topLevelManagementGroupId }}
+
+               az role assignment create --assignee ${{ vars.APP_AZURE_BIGBANG_OBJECT_ID }} \
+               --role "Contributor" \
+               --scope /subscriptions/${{ vars.MANAGEMENT_SUBSCRIPTION_ID  }}
+
+        - name: management group hierarchy
+          uses: azure/cli@v1
+          with:
+            inlineScript: |
+              # az stack mg delete --name bigBang-test-v3 --management-group-id ${{ vars.AZURE_TENANT_ID }} --yes --action-on-unmanage deleteAll
+              az stack mg create \
+               --name ${{ inputs.deploymentName }}-${{ inputs.environment}}-v3 \
+               --location ${{ inputs.location }} \
+               --management-group-id ${{ env.topLevelManagementGroupId }} \
+               --template-file ${{ inputs.managementGroupMainBicep }} \
+               --parameters ${{ inputs.managementGroupParameters }} \
+               --parameters environment=${{ inputs.environment }} \
+               --parameters topLevelManagementGroupName=${{ inputs.topLevelManagementGroupName }} \
+               --parameters managementSubscriptionId=${{ vars.MANAGEMENT_SUBSCRIPTION_ID }} \
+               --deny-settings-mode None \
+               --action-on-unmanage deleteAll \
+               --yes
+
+       
+        - name: core azure resources
+          id: coreResources
+          uses: azure/cli@v1
+          with:
+            inlineScript: |
+              az account set --subscription ${{ vars.MANAGEMENT_SUBSCRIPTION_ID }}
+
+              deployment=$(az stack sub create \
+                --name ${{ inputs.deploymentName }}-${{ inputs.environment}} \
+                --location ${{ inputs.location }} \
+                --template-file ${{ inputs.coreResourcesMainBicep }} \
+                --parameters ${{ inputs.coreResourcesParameters }} \
+                --parameters environment=${{ inputs.environment }} \
+                --parameters location=${{ inputs.location }} \
+                --deny-settings-mode None \
+                --action-on-unmanage deleteAll \
+                --yes)
+
+              readOutputs=$(echo $deployment | jq '.outputs')
+              echo "Deployment Outputs: $readOutputs"
+              keyValuePairs=$(echo $readOutputs | jq -r 'to_entries[] | "\(.key)=\(.value.value)"')
+              IFS=$'\n'
+              for output in $keyValuePairs
+              do
+                echo $output
+                echo "$output" >> $GITHUB_ENV
+              done
+        
+        - name: Azure management RBAC
+          uses: azure/cli@v1
+          with:
+            inlineScript: |
+              az role assignment create --assignee-object-id ${{ env.managementIdentityObjectId  }} \
+                --role "Owner" \
+                --assignee-principal-type ServicePrincipal \
+                --scope ${{ env.topLevelManagementGroupId }}
+
+        - name: set env variables
+          env:
+            GH_TOKEN: ${{ steps.github-token.outputs.token }}
+          run: |
+              repos="gazelle-cloud/policies gazelle-cloud/landingzones"
+              for repo in ${repos}
+              do
+                gh variable set management_Identity_resource_Id \
+                 --body ${{ env.managementIdentityResourceId }} \
+                 --env ${{ inputs.environment }} \
+                 -R $repo
+
+                 gh variable set management_Identity_client_Id \
+                 --body ${{ env.managementIdentityClientId }} \
+                 --env ${{ inputs.environment }} \
+                 -R $repo
+              done

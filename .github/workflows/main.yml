@@ -1,0 +1,35 @@
+name: bigBang
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+        - '**'
+
+  pull_request_target:
+    types:
+      - closed
+  
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test:
+    if: github.event_name == 'workflow_dispatch' || 
+        github.ref != 'refs/heads/main'
+    uses: ./.github/workflows/template.yml
+    with:
+      environment: test
+    secrets: inherit
+
+  prod:
+    if: (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+         github.event.pull_request.merged == true
+    uses: ./.github/workflows/template.yml
+    with:
+      environment: prod
+    secrets: inherit
