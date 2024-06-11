@@ -16,6 +16,7 @@ param federatedCredentials = {
   }
 }
 
+
 // these values are fetched from the GitHub variables
 param environment = ''
 param location = ''
