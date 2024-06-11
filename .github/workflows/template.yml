@@ -92,7 +92,6 @@ jobs:
                --deny-settings-mode None \
                --action-on-unmanage deleteAll \
                --yes
-
        
         - name: core azure resources
           id: coreResources
