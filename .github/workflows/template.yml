@@ -81,7 +81,7 @@ jobs:
             inlineScript: |
               # az stack mg delete --name bigBang-test-v3 --management-group-id ${{ vars.AZURE_TENANT_ID }} --yes --action-on-unmanage deleteAll
               az stack mg create \
-               --name ${{ inputs.deploymentName }}-${{ inputs.environment}}-v3 \
+               --name ${{ inputs.deploymentName }}-${{ inputs.environment}} \
                --location ${{ inputs.location }} \
                --management-group-id ${{ env.topLevelManagementGroupId }} \
                --template-file ${{ inputs.managementGroupMainBicep }} \
