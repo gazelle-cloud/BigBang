@@ -84,7 +84,7 @@ jobs:
               az stack mg create \
                --name ${{ inputs.deploymentName }}-${{ inputs.environment}} \
                --location ${{ inputs.location }} \
-               --management-group-id ${{ env.topLevelManagementGroupId }} \
+               --management-group-id ${{ inputs.topLevelManagementGroupName }}-${{ inputs.environment }} \
                --template-file ${{ inputs.managementGroupMainBicep }} \
                --parameters ${{ inputs.managementGroupParameters }} \
                --parameters environment=${{ inputs.environment }} \
