@@ -4,4 +4,5 @@ param childManagementGroupNames = [
   'platform'
   'playground'
   'online'
+  'subscriptionBank'
 ]
