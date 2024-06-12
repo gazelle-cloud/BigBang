@@ -135,7 +135,7 @@ jobs:
           env:
             GH_TOKEN: ${{ steps.github-token.outputs.token }}
           run: |
-              repos="gazelle-cloud/policies gazelle-cloud/landingzones"
+              repos="gazelle-cloud/landingzones"
               for repo in ${repos}
               do
                 gh variable set management_Identity_resource_Id \

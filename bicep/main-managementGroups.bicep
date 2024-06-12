@@ -1,20 +1,10 @@
 targetScope = 'managementGroup'
 
-param enableTelemetry bool
 param childManagementGroupNames array
 
 // these values are fetch from Github variables
 param topLevelManagementGroupName string = ''
 param environment string = ''
-param managementSubscriptionId string = ''
-
-// module topLevel 'br/public:avm/res/management/management-group:0.1.1' = {
-//   name: 'mgmtGroup-${topLevelManagementGroupName}-${environment}'
-//   params: {
-//     name: '${topLevelManagementGroupName}-${environment}'
-//     enableTelemetry: enableTelemetry
-//   }
-// }
 
 module child 'modules/managementGroups.bicep' = [
   for item in childManagementGroupNames: {
@@ -37,13 +27,12 @@ module child 'modules/managementGroups.bicep' = [
 //   }
 // }
 
-module defaultSettings 'modules/managementGroupSettings.bicep' =
-  if (environment == 'prod') {
-    name: 'default-managementGroup-settings'
-    dependsOn: [
-      child
-    ]
-    params: {
-      defaultManagementGroup: 'playground-${environment}'
-    }
+module defaultSettings 'modules/managementGroupSettings.bicep' = if (environment == 'prod') {
+  name: 'default-managementGroup-settings'
+  dependsOn: [
+    child
+  ]
+  params: {
+    defaultManagementGroup: 'playground-${environment}'
   }
+}
