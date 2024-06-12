@@ -8,19 +8,19 @@ param topLevelManagementGroupName string = ''
 param environment string = ''
 param managementSubscriptionId string = ''
 
-module topLevel 'br/public:avm/res/management/management-group:0.1.1' = {
-  name: 'mgmtGroup-${topLevelManagementGroupName}-${environment}'
-  params: {
-    name: '${topLevelManagementGroupName}-${environment}'
-    enableTelemetry: enableTelemetry
-  }
-}
+// module topLevel 'br/public:avm/res/management/management-group:0.1.1' = {
+//   name: 'mgmtGroup-${topLevelManagementGroupName}-${environment}'
+//   params: {
+//     name: '${topLevelManagementGroupName}-${environment}'
+//     enableTelemetry: enableTelemetry
+//   }
+// }
 
 module child 'modules/managementGroups.bicep' = [
   for item in childManagementGroupNames: {
     name: 'mgmtGroup-${item}-${environment}'
     params: {
-      parentManagementGroupId: topLevel.outputs.resourceId
+      parentManagementGroupId: 'gazelle-tst'
       managementGroupName: '${item}-${environment}'
     }
   }
