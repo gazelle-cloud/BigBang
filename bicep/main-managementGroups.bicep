@@ -20,7 +20,7 @@ module child 'modules/managementGroups.bicep' = [
   for item in childManagementGroupNames: {
     name: 'mgmtGroup-${item}-${environment}'
     params: {
-      parentManagementGroupId: 'gazelle-tst'
+      parentManagementGroupId: topLevelManagementGroupName
       managementGroupName: '${item}-${environment}'
     }
   }
