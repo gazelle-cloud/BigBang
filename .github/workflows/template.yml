@@ -89,7 +89,6 @@ jobs:
                --parameters ${{ inputs.managementGroupParameters }} \
                --parameters environment=${{ inputs.environment }} \
                --parameters topLevelManagementGroupName=${{ env.topLevelManagementGroupId }} \
-              #  --parameters managementSubscriptionId=${{ vars.MANAGEMENT_SUBSCRIPTION_ID }} \
                --deny-settings-mode None \
                --action-on-unmanage deleteAll \
                --yes
