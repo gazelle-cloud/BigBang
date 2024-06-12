@@ -21,7 +21,9 @@ function reset-managementGroup {
         foreach ($stack in $deploymentStacks) {
             if ($deleteDeployments) {
                 Write-Output "removing deployment stack for subscription $($stack.name)"
-                Remove-AzSubscriptionDeploymentStack -name $stack.name -ActionOnUnmanage  'DeleteAll' -Force
+                Start-Job {
+                    Remove-AzSubscriptionDeploymentStack -name $stack.name -ActionOnUnmanage  'DeleteAll' -Force
+                }
             }
         }
         Write-Output "moving subscription $SubscriptionId to $($tenantId)"
