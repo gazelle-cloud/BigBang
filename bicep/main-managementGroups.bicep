@@ -1,7 +1,7 @@
 targetScope = 'managementGroup'
 
 param childManagementGroupNames array
-param managementSubscriptionId string
+param managementSubscriptionId string = ''
 
 // these values are fetch from Github variables
 param topLevelManagementGroupName string = ''
